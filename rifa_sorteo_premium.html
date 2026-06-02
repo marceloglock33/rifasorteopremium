@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteo de Dinero en Efectivo</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for Sorteo Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Outfit', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #180933 0%, #0a021c 100%);
+            color: #f3f4f6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        /* Glassmorphism elements */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .glass-modal {
+            background: rgba(15, 6, 35, 0.95);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .ticket-btn-free {
+            background: linear-gradient(145deg, #2e5944 0%, #1c3d2e 100%);
+            border: 1.5px solid #4ade80;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 10px rgba(74, 222, 128, 0.15);
+            color: #a7f3d0;
+        }
+        .ticket-btn-selected {
+            background: linear-gradient(145deg, #fbbf24 0%, #ca8a04 100%);
+            border: 1.5px solid #fef08a;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 0 15px rgba(245, 158, 11, 0.6);
+            color: #0f172a;
+        }
+        .ticket-btn-reserved {
+            background: linear-gradient(145deg, #4f2e8f 0%, #311c5d 100%);
+            border: 1.5px solid #a78bfa;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.1), 0 0 12px rgba(167, 139, 250, 0.4);
+            color: #ede9fe;
+        }
+        .ticket-btn-paid {
+            background: linear-gradient(145deg, #ef4444 0%, #991b1b 100%);
+            border: 1.5px solid #f87171;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 4px 12px rgba(239, 68, 68, 0.3);
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-4 md:p-6 flex flex-col items-center justify-start min-h-screen">
+
+    <!-- App Container -->
+    <div id="app" class="w-full max-w-lg mx-auto flex flex-col min-h-[92vh] justify-between relative">
+        
+        <!-- Header Section -->
+        <header class="flex flex-col px-4 py-5 mb-4 glass-card rounded-3xl relative overflow-hidden">
+            <!-- Background glow effect behind header -->
+            <div class="absolute -top-12 -left-12 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute -top-12 -right-12 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl"></div>
+            
+            <div class="flex items-center justify-between w-full z-10">
+                <div class="flex flex-col">
+                    <h1 id="raffleTitle" class="text-2xl md:text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-400">
+                        Sorteo de Dinero en Efectivo 🥳
+                    </h1>
+                </div>
+                
+                <!-- Header Controls -->
+                <div class="flex items-center gap-2">
+                    <!-- Share Button -->
+                    <button id="btnShare" onclick="copyShareLink()" class="p-2.5 rounded-xl bg-purple-900/40 border border-purple-500/30 text-purple-200 hover:bg-purple-800/60 hover:text-white transition-all active:scale-95" title="Compartir Sorteo">
+                        <i class="fa-solid fa-share-nodes"></i>
+                    </button>
+                    <!-- Admin Config Gear Button -->
+                    <button onclick="openAdminAuthModal()" class="p-2.5 rounded-xl bg-purple-900/40 border border-purple-500/30 text-purple-200 hover:bg-purple-800/60 hover:text-white transition-all active:scale-95" title="Administración">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- VISTA AMPLIADA DEL PREMIO MAYOR (¡Súper Destacado!) -->
+            <div class="mt-4 p-4 rounded-2xl bg-gradient-to-r from-yellow-500/10 via-purple-500/10 to-pink-500/10 border border-yellow-500/30 text-center relative z-10 shadow-inner">
+                <span class="text-[11px] text-yellow-400 uppercase tracking-widest font-extrabold block mb-1">🔥 GRAN PREMIO MAYOR 🔥</span>
+                <h3 id="rafflePrize" class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-amber-300 tracking-tight drop-shadow-md">Cargando...</h3>
+                <div class="flex items-center justify-center gap-4 mt-2 text-xs text-gray-300 border-t border-white/5 pt-2">
+                    <div>
+                        Valor Boleto: <span id="rafflePrice" class="font-bold text-yellow-300">Cargando...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="text-xs text-purple-200 mt-3 flex items-center justify-center gap-1.5 font-light text-center w-full z-10 border-t border-white/5 pt-2.5">
+                <i class="fa-regular fa-calendar-days text-yellow-400"></i>
+                Sorteo: <span id="raffleDate" class="font-semibold text-yellow-300">Cargando...</span>
+            </p>
+        </header>
+
+        <!-- Tablero Legend and Stats Card -->
+        <main class="flex-grow flex flex-col mb-4">
+            <div class="glass-card rounded-3xl p-4 flex flex-col gap-4 border border-purple-500/10">
+                <!-- Board Title and Stats -->
+                <div class="flex items-center justify-between border-b border-purple-500/10 pb-3">
+                    <div>
+                        <h2 class="text-base font-bold text-gray-200">Tablero de Números (00 - 99)</h2>
+                        <span class="text-xs text-purple-300/80">Toca para elegir todos tus números</span>
+                    </div>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-900/50 text-purple-200 border border-purple-500/20">
+                        100 mostrados
+                    </span>
+                </div>
+
+                <!-- Legend of Ticket States matching image styles -->
+                <div class="grid grid-cols-4 gap-1.5 text-center text-[10px] font-bold">
+                    <div class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl bg-green-950/40 border border-green-500/30 text-green-300">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> Libre
+                    </div>
+                    <div class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl bg-yellow-950/40 border border-yellow-500/30 text-yellow-300">
+                        <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> Elegido
+                    </div>
+                    <div class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl bg-purple-950/50 border border-purple-500/30 text-purple-300">
+                        <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Reserv.
+                    </div>
+                    <div class="flex items-center justify-center gap-1 py-1.5 px-2 rounded-xl bg-red-950/50 border border-red-500/30 text-red-300">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Pagado
+                    </div>
+                </div>
+
+                <!-- Ticket grid container -->
+                <div class="max-h-[50vh] overflow-y-auto pr-1">
+                    <div id="ticketsGrid" class="grid grid-cols-5 gap-2.5 sm:gap-3 py-1">
+                        <!-- Filled dynamically from JS with 00 to 99 tickets -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Selection Floating Action Bar -->
+        <div id="selectionBar" class="hidden flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 mb-3 rounded-2xl bg-gradient-to-r from-yellow-500/20 via-amber-500/10 to-purple-500/20 border border-yellow-500/30 shadow-lg">
+            <div class="text-left w-full sm:w-auto">
+                <div class="flex items-center justify-between sm:justify-start gap-2">
+                    <span class="text-[10px] text-yellow-300 uppercase tracking-widest font-bold">Tus Números Elegidos</span>
+                    <button onclick="clearSelection()" class="text-[10px] text-red-400 hover:text-red-300 underline font-semibold">Limpiar Todo</button>
+                </div>
+                <p id="selectionListText" class="text-sm text-white font-extrabold tracking-wide mt-0.5 font-mono truncate max-w-[250px]">Ninguno</p>
+            </div>
+            <button onclick="openMultiCheckoutModal()" class="w-full sm:w-auto px-5 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95">
+                Reservar Seleccionados <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- Footer Informativo -->
+        <footer class="glass-card rounded-3xl p-4 border border-purple-500/20 mb-2 text-center">
+            <p class="text-xs text-purple-300">
+                Selecciona tus números en la grilla para reservarlos de inmediato.
+            </p>
+            <p class="text-[10px] text-gray-400 mt-1">
+                Sorteo de los Grupos - Todos los derechos reservados.
+            </p>
+        </footer>
+    </div>
+
+    <!-- Checkout / Reservation Modal -->
+    <div id="checkoutModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+        <div class="w-full max-w-md glass-modal rounded-3xl p-6 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto">
+            
+            <!-- Modal Header (¡TITULO CENTRADO Y AGRANDADO!) -->
+            <div class="relative flex items-center justify-center mb-4 border-b border-purple-500/10 pb-3">
+                <h3 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-300 via-emerald-100 to-purple-300 text-center tracking-tight">
+                    Confirmar Reserva
+                </h3>
+                <button onclick="closeCheckoutModal()" class="absolute right-0 text-gray-400 hover:text-white text-lg p-1.5 bg-white/5 rounded-xl transition-all active:scale-95">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Displayed Selected Numbers list (¡AGRANDADO, CENTRADO Y PREMIUM!) -->
+            <div class="bg-gradient-to-br from-purple-900/40 to-indigo-950/50 border-2 border-purple-500/30 rounded-3xl p-5 mb-4 space-y-1 text-center shadow-inner relative overflow-hidden">
+                <!-- Pequeño destello de diseño -->
+                <div class="absolute -right-4 -top-4 w-12 h-12 bg-yellow-500/5 rounded-full blur-xl"></div>
+                
+                <span class="text-xs text-yellow-400 uppercase tracking-widest font-black block">
+                    🎟️ Tus Números Elegidos 🎟️
+                </span>
+                <p id="modalTicketNum" class="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-100 to-amber-300 tracking-wider font-mono py-1 break-all drop-shadow-sm">
+                    --
+                </p>
+            </div>
+
+            <!-- Ticket Price Label in Checkout -->
+            <div class="bg-purple-950/50 border border-purple-500/20 rounded-2xl p-3 mb-4 flex justify-between items-center text-xs">
+                <span class="text-purple-200 font-medium text-xs">Valor total a transferir:</span>
+                <span id="modalTicketPrice" class="text-yellow-300 font-black text-base">--</span>
+            </div>
+
+            <!-- Customer Details Form -->
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-purple-200 mb-1.5">Tu Nombre y Apellido *</label>
+                    <input type="text" id="custName" required placeholder="Ej. Juan Pérez" class="w-full px-4 py-3 bg-purple-950/40 border border-purple-500/30 rounded-xl text-white placeholder-purple-300/40 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-purple-200 mb-1.5">Tu Teléfono (WhatsApp) *</label>
+                    <input type="tel" id="custPhone" required placeholder="Ej: +5491123456789" class="w-full px-4 py-3 bg-purple-950/40 border border-purple-500/30 rounded-xl text-white placeholder-purple-300/40 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+
+                <!-- DOS BOTONES DE ACCIÓN (Reservar / Pagar) -->
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <!-- Botón 1: Reservar (Color Reservado Violeta) -->
+                    <button type="button" onclick="actionReserveOnly()" class="py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95 text-white ticket-btn-reserved border-none">
+                        <i class="fa-solid fa-clock"></i> Reservar
+                    </button>
+                    <!-- Botón 2: Pagar (Color Pagado Rojo) -->
+                    <button type="button" onclick="actionPayModal()" class="py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95 text-white ticket-btn-paid border-none">
+                        <i class="fa-solid fa-credit-card"></i> Pagar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVA PESTAÑA FLOTANTE DE PAGO (SIMPLIFICADA, SOLO TEXTO Y ALIAS) -->
+    <div id="paymentDetailsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md hidden">
+        <div class="w-full max-w-md glass-modal rounded-3xl p-6 shadow-2xl relative overflow-hidden max-h-[90vh] overflow-y-auto">
+            
+            <div class="flex justify-between items-center mb-4 border-b border-purple-500/10 pb-3 relative">
+                <h3 class="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-sky-200 to-sky-100 text-center w-full pr-6 tracking-tight">
+                    Realizá tu pago
+                </h3>
+                <button onclick="closePaymentModal()" class="text-gray-400 hover:text-white text-lg p-1.5 bg-white/5 rounded-xl absolute right-0">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <!-- Resumen de números elegidos y total -->
+            <div class="bg-gradient-to-br from-purple-900/40 to-indigo-950/50 border border-purple-500/20 rounded-2xl p-4 mb-5 text-center shadow-inner">
+                <span class="text-[10px] text-purple-300 uppercase tracking-widest font-black block mb-1">Monto Total a Transferir</span>
+                <p id="paymentModalTotal" class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-sky-200 font-mono py-1">--</p>
+                <div class="mt-2 pt-2 border-t border-white/5 flex justify-between items-center text-xs">
+                    <span class="text-gray-400">Tus Números:</span>
+                    <span id="paymentModalNumbers" class="text-yellow-300 font-bold font-mono">--</span>
+                </div>
+            </div>
+
+            <!-- SECCIÓN DE INSTRUCCIONES Y DATOS BANCARIOS (SIMPLIFICADA) -->
+            <div class="space-y-4">
+                
+                <!-- Texto orientativo amigable -->
+                <div class="p-4 rounded-2xl bg-blue-950/30 border border-blue-500/25 text-left relative shadow-md">
+                    <h4 class="text-sm font-bold text-blue-300 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-building-columns"></i> ¿Cómo pagar tu rifa?
+                    </h4>
+                    <ul class="text-[12px] text-gray-300 leading-relaxed space-y-1.5 ml-1">
+                        <li><strong>1.</strong> Copiá nuestro Alias o CVU de acá abajo.</li>
+                        <li><strong>2.</strong> Abrí tu aplicación de banco o billetera virtual favorita.</li>
+                        <li><strong>3.</strong> Realizá la transferencia por el monto exacto.</li>
+                        <li><strong>4.</strong> Sacale una captura de pantalla al comprobante.</li>
+                    </ul>
+                </div>
+
+                <!-- Tarjetas de Alias y CVU -->
+                <div class="space-y-2.5">
+                    <!-- Caja de Alias -->
+                    <div class="p-3.5 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-between text-xs shadow-inner">
+                        <div class="overflow-hidden max-w-[70%]">
+                            <span class="font-bold text-[9px] uppercase tracking-wider text-purple-400 block mb-0.5">Alias de la cuenta:</span>
+                            <span id="paymentModalAlias" class="font-mono text-white text-[13px] block truncate font-bold">Cargando...</span>
+                        </div>
+                        <button onclick="copyTextFromElement('paymentModalAlias')" class="px-4 py-2 bg-purple-500/20 text-purple-300 rounded-xl text-[10px] font-extrabold hover:bg-purple-500/40 transition-all active:scale-95 border border-purple-500/30 flex items-center gap-1.5">
+                            <i class="fa-regular fa-copy"></i> Copiar
+                        </button>
+                    </div>
+                    
+                    <!-- Caja de CVU -->
+                    <div class="p-3.5 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-between text-xs shadow-inner">
+                        <div class="overflow-hidden max-w-[70%]">
+                            <span class="font-bold text-[9px] uppercase tracking-wider text-purple-400 block mb-0.5">CVU de la cuenta:</span>
+                            <span id="paymentModalCVU" class="font-mono text-white text-[13px] block truncate font-bold">Cargando...</span>
+                        </div>
+                        <button onclick="copyTextFromElement('paymentModalCVU')" class="px-4 py-2 bg-purple-500/20 text-purple-300 rounded-xl text-[10px] font-extrabold hover:bg-purple-500/40 transition-all active:scale-95 border border-purple-500/30 flex items-center gap-1.5">
+                            <i class="fa-regular fa-copy"></i> Copiar
+                        </button>
+                    </div>
+                </div>
+
+                <p class="text-[11px] text-yellow-300/90 font-medium text-center leading-relaxed px-2 pt-2 border-t border-white/10 mt-2">
+                    <i class="fa-solid fa-camera mr-1"></i> Una vez hecho el pago, tocá el botón verde para enviarnos el comprobante por WhatsApp.
+                </p>
+
+                <!-- Botón de Confirmación Final en WhatsApp -->
+                <button onclick="confirmAndSendReceipt()" class="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-md active:scale-95">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> Enviar Comprobante
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Detail Modal (When clicking on Reserved or Paid tickets) -->
+    <div id="ticketDetailModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+        <div class="w-full max-w-md glass-modal rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            <div class="flex justify-between items-center mb-4 border-b border-purple-500/10 pb-3">
+                <h3 class="text-xl font-extrabold text-white">
+                    Boleto Nro <span id="detailTicketNum" class="text-yellow-300">--</span>
+                </h3>
+                <button onclick="closeTicketDetailModal()" class="text-gray-400 hover:text-white text-lg p-1 bg-white/5 rounded-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex justify-between items-center p-3 rounded-xl bg-purple-950/40 border border-purple-500/20">
+                    <span class="text-sm text-purple-200">Estado actual:</span>
+                    <span id="detailTicketStatusBadge" class="text-xs font-bold px-3 py-1 rounded-full">--</span>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase">Información del Comprador</h4>
+                    <div class="p-3.5 rounded-xl bg-black/30 border border-white/5">
+                        <p class="text-sm text-gray-300">Nombre: <span id="detailBuyerName" class="font-bold text-white">--</span></p>
+                        <p class="text-sm text-gray-300 mt-1">Teléfono: <span id="detailBuyerPhone" class="font-bold text-white">--</span></p>
+                    </div>
+                </div>
+
+                <p id="detailUserAdvice" class="text-xs text-yellow-300/80 italic leading-relaxed text-center mt-2">
+                    Este boleto no está libre. Si deseas reservar otro, por favor elige un casillero verde.
+                </p>
+
+                <button onclick="closeTicketDetailModal()" class="w-full py-3 bg-purple-900/50 hover:bg-purple-800/60 text-white rounded-xl border border-purple-500/30 text-sm font-semibold transition-all">
+                    Volver al Tablero
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Pin Access Modal -->
+    <div id="adminAuthModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md hidden">
+        <div class="w-full max-w-sm glass-modal rounded-3xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-5 border-b border-purple-500/10 pb-3">
+                <h3 class="text-lg font-bold text-yellow-300">
+                    <i class="fa-solid fa-lock mr-1.5"></i> Acceso Administración
+                </h3>
+                <button onclick="closeAdminAuthModal()" class="text-gray-400 hover:text-white text-lg p-1 bg-white/5 rounded-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-purple-200 mb-1.5">Código PIN de Acceso</label>
+                    <input type="password" id="adminPinInput" placeholder="PIN por defecto: 1234" class="w-full px-4 py-3 bg-purple-950/40 border border-purple-500/30 rounded-xl text-center text-lg font-bold tracking-widest text-white focus:outline-none focus:ring-2 focus:ring-yellow-500">
+                </div>
+                <div id="adminAuthError" class="text-xs text-red-400 font-medium hidden text-center">
+                    PIN incorrecto. Inténtalo de nuevo.
+                </div>
+                <button onclick="verifyAdminPin()" class="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold rounded-xl transition-all">
+                    Entrar al Panel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Configuration & Management Modal -->
+    <div id="adminPanelModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md hidden">
+        <div class="w-full max-w-lg glass-modal rounded-3xl p-6 shadow-2xl h-[90vh] overflow-y-auto flex flex-col justify-between">
+            <div>
+                <!-- Modal Admin Header -->
+                <div class="flex justify-between items-center mb-4 border-b border-purple-500/15 pb-3">
+                    <div>
+                        <h3 class="text-lg font-extrabold text-yellow-300">Panel del Organizador</h3>
+                        <p class="text-[10px] text-gray-400">Configura la rifa, aprueba pagos y asiste tickets</p>
+                    </div>
+                    <button onclick="closeAdminPanel()" class="text-gray-400 hover:text-white text-lg p-1 bg-white/5 rounded-lg">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Tabs: General Settings & Ticket Management -->
+                <div class="flex gap-2 mb-4 border-b border-purple-500/10 pb-3">
+                    <button id="tabSettingsBtn" onclick="switchAdminTab('settings')" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-yellow-500 text-slate-950">
+                        Ajustes Generales
+                    </button>
+                    <button id="tabTicketsBtn" onclick="switchAdminTab('tickets')" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-purple-950 text-purple-200 border border-purple-500/20">
+                        Gestionar Boletos
+                    </button>
+                </div>
+
+                <!-- Admin Tab Content: General Settings -->
+                <div id="adminTabSettings" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] text-purple-200 font-semibold mb-1">Nombre del Sorteo</label>
+                            <input type="text" id="adminRaffleTitle" class="w-full px-3 py-2.5 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-purple-200 font-semibold mb-1">Fecha de Sorteo</label>
+                            <input type="text" id="adminRaffleDate" class="w-full px-3 py-2.5 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-white">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] text-purple-200 font-semibold mb-1">Premio Mayor ($)</label>
+                            <input type="text" id="adminRafflePrize" class="w-full px-3 py-2.5 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-purple-200 font-semibold mb-1">Valor Boleto ($)</label>
+                            <input type="text" id="adminRafflePrice" class="w-full px-3 py-2.5 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-white">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] text-purple-200 font-semibold mb-1">Alias de Cobro</label>
+                            <input type="text" id="adminWalletAlias" class="w-full px-3 py-2.5 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-purple-200 font-semibold mb-1">CVU de Cobro</label>
+                            <input type="text" id="adminWalletCVU" class="w-full px-3 py-2.5 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-white">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] text-purple-200 font-semibold mb-1">Teléfono WhatsApp Organizador</label>
+                        <input type="text" id="adminPhone" placeholder="Ej: +5491123456789" class="w-full px-3 py-2.5 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-white">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] text-purple-200 font-semibold mb-1">Cambiar Pin del Panel</label>
+                        <input type="password" id="adminNewPin" placeholder="Opcional: ingresa nuevo pin" class="w-full px-3 py-2.5 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-white">
+                    </div>
+
+                    <button onclick="saveAdminSettings()" class="w-full py-3 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl text-sm transition-all shadow-md">
+                        <i class="fa-solid fa-floppy-disk mr-1.5"></i> Guardar Ajustes
+                    </button>
+                </div>
+
+                <!-- Admin Tab Content: Ticket Management List -->
+                <div id="adminTabTickets" class="space-y-3 hidden">
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="adminTicketSearch" oninput="filterAdminTickets()" placeholder="Buscar por número o nombre..." class="flex-1 px-3 py-2 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-white">
+                        <select id="adminTicketFilter" onchange="filterAdminTickets()" class="px-3 py-2 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-purple-200">
+                            <option value="all">Todos</option>
+                            <option value="free">Libres</option>
+                            <option value="reserved">Reservados</option>
+                            <option value="paid">Pagados</option>
+                        </select>
+                    </div>
+
+                    <!-- Scrollable Tickets Management List -->
+                    <div id="adminTicketsList" class="max-h-[38vh] overflow-y-auto space-y-2 pr-1">
+                        <!-- Filled dynamically from JS with interactive ticket controls -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer for Admin Panel -->
+            <div class="border-t border-purple-500/10 pt-3 mt-4 flex items-center justify-between">
+                <button onclick="resetAllTickets()" class="px-3 py-2.5 bg-red-600/20 text-red-300 border border-red-500/20 hover:bg-red-600/30 rounded-xl text-[11px] font-bold transition-all">
+                    Reiniciar Todos los Boletos
+                </button>
+                
+                <button onclick="triggerDrawAnimation()" class="px-5 py-2.5 bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider flex items-center gap-1.5 shadow-md active:scale-95">
+                    <i class="fa-solid fa-star"></i> Realizar Sorteo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sorteo Animation and Victory Celebration Modal -->
+    <div id="sorteoAnimationModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-lg hidden">
+        <div class="w-full max-w-md glass-modal rounded-3xl p-8 shadow-2xl text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[50vh]">
+            <div id="rouletteContainer" class="space-y-6">
+                <h3 class="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-400 uppercase tracking-widest">
+                    Sorteando Ganador
+                </h3>
+                
+                <div class="relative flex items-center justify-center my-8">
+                    <!-- Glow Ring -->
+                    <div class="absolute inset-0 w-36 h-36 mx-auto rounded-full bg-yellow-500/20 blur-xl animate-pulse"></div>
+                    <div class="w-32 h-32 rounded-full border-4 border-yellow-500 flex items-center justify-center bg-purple-950/80 shadow-2xl relative z-10">
+                        <span id="rouletteNumber" class="text-5xl font-black text-yellow-300 tracking-tight">--</span>
+                    </div>
+                </div>
+
+                <p id="rouletteStatus" class="text-xs text-purple-200 animate-pulse font-medium">
+                    Mezclando todos los boletos pagados...
+                </p>
+            </div>
+
+            <!-- Victory Reveal Block -->
+            <div id="victoryContainer" class="space-y-6 hidden scale-95 transition-all duration-500">
+                <div class="inline-block px-4 py-1.5 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 text-xs font-bold uppercase tracking-widest animate-bounce">
+                    🎉 ¡Tenemos Ganador! 🎉
+                </div>
+                
+                <h3 id="victoryTitle" class="text-2xl font-black text-white">
+                    ¡El Número Ganador es!
+                </h3>
+
+                <div class="w-36 h-36 mx-auto rounded-full border-4 border-emerald-400 flex items-center justify-center bg-gradient-to-tr from-emerald-500/20 to-teal-500/30 shadow-2xl">
+                    <span id="victoryNumber" class="text-6xl font-black text-emerald-300 tracking-tight">00</span>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                    <p class="text-xs text-purple-200 uppercase tracking-wider font-semibold">Afortunado/a:</p>
+                    <p id="victoryName" class="text-lg font-extrabold text-white">--</p>
+                    <p id="victoryPhone" class="text-xs text-gray-300 font-mono">--</p>
+                </div>
+
+                <div class="flex gap-2">
+                    <button id="victoryWhatsappBtn" class="flex-1 py-3 px-4 bg-green-500 hover:bg-green-400 text-slate-950 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Felicitar
+                    </button>
+                    <button onclick="closeWinnerCelebration()" class="flex-1 py-3 px-4 bg-purple-900 hover:bg-purple-800 text-white font-bold rounded-xl text-xs transition-all border border-purple-500/30">
+                        Volver al Inicio
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Toast Notification System -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-[100] pointer-events-none space-y-2 max-w-sm"></div>
+
+    <!-- Firebase JS Integration Module -->
+    <script type="module">
+        
+        const defaultAppId = "sorteo-rifa-default";
+        const appId = typeof __app_id !== 'undefined' ? __app_id : defaultAppId;
+
+        // Global state of tickets (00 to 99) and configuration
+        let raffleSettings = {
+            title: "Sorteo de Dinero en Efectivo 🥳",
+            date: "Cuando se vendan todos los números se anunciara que fecha se sortea y que quiniela sera elegida",
+            prize: "$10.000",
+            price: "$500",
+            alias: "mglock.ppay",
+            cvu: "0000076500000023813467",
+            adminPhone: "+5493764394439",
+            adminPin: "1233"
+        };
+
+        // Initialize 100 tickets with empty free state
+        let ticketsState = {};
+        for (let i = 0; i < 100; i++) {
+            const formattedNum = String(i).padStart(2, '0');
+            ticketsState[formattedNum] = {
+                status: "free", // free, reserved, paid
+                buyerName: "",
+                buyerPhone: ""
+            };
+        }
+
+        // Active ticket selection array for customers
+        let selectedTickets = [];
+
+        // Current active state
+        let currentUserId = null;
+        let isFirebaseSimulated = false;
+        let firebaseServices = {};
+
+        function loadSettingsFromLocalStorage() {
+            const savedSettings = localStorage.getItem('raffleSettings');
+            if (savedSettings) {
+                try {
+                    raffleSettings = { ...raffleSettings, ...JSON.parse(savedSettings) };
+                } catch (e) {
+                    console.error("Error parsing saved settings", e);
+                }
+            }
+            const savedTickets = localStorage.getItem('ticketsState');
+            if (savedTickets) {
+                try {
+                    ticketsState = JSON.parse(savedTickets);
+                } catch (e) {
+                    console.error("Error parsing saved tickets", e);
+                }
+            }
+        }
+
+        async function authenticateUser() {
+            if (typeof __firebase_config === 'undefined') {
+                isFirebaseSimulated = true;
+                loadSettingsFromLocalStorage();
+                loadInitialUI();
+                return;
+            }
+
+            try {
+                const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+                const { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+                const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+
+                let firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                const db = getFirestore(app);
+                const auth = getAuth(app);
+
+                const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global');
+                const ticketsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'tickets', 'state');
+
+                firebaseServices = {
+                    setDoc,
+                    settingsDocRef,
+                    ticketsDocRef
+                };
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUserId = user.uid;
+                        
+                        onSnapshot(settingsDocRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                raffleSettings = { ...raffleSettings, ...docSnap.data() };
+                                localStorage.setItem('raffleSettings', JSON.stringify(raffleSettings));
+                                updateRaffleUI();
+                            } else {
+                                setDoc(settingsDocRef, raffleSettings);
+                            }
+                        });
+
+                        onSnapshot(ticketsDocRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                ticketsState = docSnap.data();
+                                localStorage.setItem('ticketsState', JSON.stringify(ticketsState));
+                                renderTicketsGrid();
+                                updateAdminTicketsTable();
+                            } else {
+                                setDoc(ticketsDocRef, ticketsState);
+                            }
+                        });
+                    } else {
+                        currentUserId = null;
+                    }
+                });
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                loadSettingsFromLocalStorage();
+                loadInitialUI();
+
+            } catch (error) {
+                isFirebaseSimulated = true;
+                loadSettingsFromLocalStorage();
+                loadInitialUI();
+            }
+        }
+
+        function updateRaffleUI() {
+            document.getElementById('raffleTitle').innerHTML = raffleSettings.title || "Gran Sorteo 🥳";
+            document.getElementById('raffleDate').textContent = raffleSettings.date || "Próximamente";
+            document.getElementById('rafflePrize').textContent = raffleSettings.prize || "$30.000";
+            document.getElementById('rafflePrice').textContent = raffleSettings.price || "$1000";
+            // Actualizamos la solapa de pago con Alias y CVU
+            document.getElementById('paymentModalAlias').textContent = raffleSettings.alias || "No configurado";
+            document.getElementById('paymentModalCVU').textContent = raffleSettings.cvu || "No configurado";
+        }
+
+        function renderTicketsGrid() {
+            const grid = document.getElementById('ticketsGrid');
+            grid.innerHTML = "";
+
+            for (let i = 0; i < 100; i++) {
+                const numStr = String(i).padStart(2, '0');
+                const info = ticketsState[numStr] || { status: 'free' };
+
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.className = "aspect-square rounded-2xl flex flex-col items-center justify-center font-bold text-lg transition-all active:scale-95 relative overflow-hidden h-12 w-12 mx-auto sm:h-14 sm:w-14";
+                btn.textContent = numStr;
+
+                if (info.status === 'free') {
+                    const isSelected = selectedTickets.includes(numStr);
+                    if (isSelected) {
+                        btn.className = "aspect-square rounded-2xl flex flex-col items-center justify-center font-bold text-lg transition-all active:scale-95 relative overflow-hidden h-12 w-12 mx-auto sm:h-14 sm:w-14 ticket-btn-selected";
+                        const star = document.createElement('i');
+                        star.className = "fa-solid fa-star absolute top-1 right-1 text-[8px] text-slate-900 opacity-90 animate-pulse";
+                        btn.appendChild(star);
+                    } else {
+                        btn.className = "aspect-square rounded-2xl flex flex-col items-center justify-center font-bold text-lg transition-all active:scale-95 relative overflow-hidden h-12 w-12 mx-auto sm:h-14 sm:w-14 ticket-btn-free";
+                    }
+                    btn.onclick = () => toggleTicketSelection(numStr);
+                } else if (info.status === 'reserved') {
+                    btn.className = "aspect-square rounded-2xl flex flex-col items-center justify-center font-bold text-lg transition-all active:scale-95 relative overflow-hidden h-12 w-12 mx-auto sm:h-14 sm:w-14 ticket-btn-reserved";
+                    const lock = document.createElement('i');
+                    lock.className = "fa-solid fa-lock absolute top-1 right-1 text-[8px] opacity-70";
+                    btn.appendChild(lock);
+                    btn.onclick = () => viewTicketDetail(numStr);
+                } else if (info.status === 'paid') {
+                    btn.className = "aspect-square rounded-2xl flex flex-col items-center justify-center font-bold text-lg transition-all active:scale-95 relative overflow-hidden h-12 w-12 mx-auto sm:h-14 sm:w-14 ticket-btn-paid";
+                    const check = document.createElement('i');
+                    check.className = "fa-solid fa-check absolute bottom-1 right-1 text-[8px] text-white opacity-90";
+                    btn.appendChild(check);
+                    btn.onclick = () => viewTicketDetail(numStr);
+                }
+
+                grid.appendChild(btn);
+            }
+        }
+
+        window.toggleTicketSelection = function(number) {
+            const index = selectedTickets.indexOf(number);
+            if (index > -1) {
+                selectedTickets.splice(index, 1);
+            } else {
+                selectedTickets.push(number);
+            }
+            renderTicketsGrid();
+            updateSelectionBar();
+        };
+
+        window.clearSelection = function() {
+            selectedTickets = [];
+            renderTicketsGrid();
+            updateSelectionBar();
+        };
+
+        window.updateSelectionBar = function() {
+            const bar = document.getElementById('selectionBar');
+            const listText = document.getElementById('selectionListText');
+            if (selectedTickets.length > 0) {
+                selectedTickets.sort((a, b) => parseInt(a) - parseInt(b));
+                listText.textContent = selectedTickets.join(', ');
+                bar.classList.remove('hidden');
+            } else {
+                bar.classList.add('hidden');
+            }
+        };
+
+        function calculateTotalPrice(priceStr, count) {
+            let cleanPrice = priceStr.replace(/\D/g, '');
+            let num = parseInt(cleanPrice) || 0;
+            let total = num * count;
+            return '$' + total.toLocaleString('es-AR');
+        }
+
+        window.openMultiCheckoutModal = function() {
+            if (selectedTickets.length === 0) return;
+            
+            document.getElementById('modalTicketNum').textContent = selectedTickets.join(', ');
+            const calculatedTotal = calculateTotalPrice(raffleSettings.price, selectedTickets.length);
+            document.getElementById('modalTicketPrice').textContent = calculatedTotal + ` (${selectedTickets.length} número${selectedTickets.length > 1 ? 's' : ''})`;
+            
+            document.getElementById('custName').value = "";
+            document.getElementById('custPhone').value = "";
+            document.getElementById('checkoutModal').classList.remove('hidden');
+        };
+
+        window.closeCheckoutModal = function() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+        };
+
+        // ACCIÓN: BOTÓN RESERVAR SOLO (Guarda y abre WhatsApp)
+        window.actionReserveOnly = async function() {
+            if (selectedTickets.length === 0) return;
+
+            const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+
+            if (!name || !phone) {
+                showToast("Por favor, completa tu Nombre y Teléfono antes de reservar.", "error");
+                return;
+            }
+
+            // Marcar todos los boletos elegidos como reservados
+            selectedTickets.forEach(num => {
+                ticketsState[num] = {
+                    status: "reserved",
+                    buyerName: name,
+                    buyerPhone: phone
+                };
+            });
+
+            const calculatedTotal = calculateTotalPrice(raffleSettings.price, selectedTickets.length);
+            const selectedStr = selectedTickets.join(', ');
+
+            await saveTicketsState();
+            closeCheckoutModal();
+            showToast(`¡Tus ${selectedTickets.length} boletos han sido Reservados!`, "success");
+
+            // Redirigir a WhatsApp avisando de la reserva
+            const adminPhoneClean = raffleSettings.adminPhone.replace(/\D/g, '');
+            const message = encodeURIComponent(`Hola, quiero RESERVAR los números *${selectedStr}* para el *${raffleSettings.title}* a nombre de *${name}* (${phone}). Aguardo indicaciones para el pago del total de *${calculatedTotal}*. ¡Muchas gracias!`);
+            const waUrl = `https://wa.me/${adminPhoneClean}?text=${message}`;
+            
+            selectedTickets = [];
+            updateSelectionBar();
+            renderTicketsGrid();
+
+            window.open(waUrl, '_blank');
+        };
+
+        // ACCIÓN: BOTÓN PAGAR (Prepara y abre la pestaña simplificada de pago)
+        window.actionPayModal = function() {
+            const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+
+            if (!name || !phone) {
+                showToast("Por favor, completa tu Nombre y Teléfono antes de ir a pagar.", "error");
+                return;
+            }
+
+            // Actualizamos la solapa de cobro interno
+            document.getElementById('paymentModalNumbers').textContent = selectedTickets.join(', ');
+            const calculatedTotal = calculateTotalPrice(raffleSettings.price, selectedTickets.length);
+            document.getElementById('paymentModalTotal').textContent = calculatedTotal;
+            document.getElementById('paymentModalAlias').textContent = raffleSettings.alias || "No configurado";
+            document.getElementById('paymentModalCVU').textContent = raffleSettings.cvu || "No configurado";
+
+            // Mostramos la pestaña de pago final
+            document.getElementById('paymentDetailsModal').classList.remove('hidden');
+        };
+
+        window.closePaymentModal = function() {
+            document.getElementById('paymentDetailsModal').classList.add('hidden');
+        };
+
+        // ACCIÓN GENÉRICA: COPIAR TEXTO DE CUALQUIER ELEMENTO (Alias o CVU)
+        window.copyTextFromElement = function(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            if (!text || text.trim() === "No configurado" || text.trim() === "Cargando...") {
+                showToast("El dato no está configurado.", "error");
+                return;
+            }
+            copyTextToClipboard(text);
+            showToast("¡Copiado al portapapeles! 📋", "success");
+        };
+
+        // CONFIRMACIÓN FINAL: Guarda reserva temporal y te abre el chat de confirmación en WhatsApp
+        window.confirmAndSendReceipt = async function() {
+            if (selectedTickets.length === 0) return;
+
+            const name = document.getElementById('custName').value.trim();
+            const phone = document.getElementById('custPhone').value.trim();
+
+            if (!name || !phone) {
+                showToast("Por favor, completa tus datos en el paso anterior.", "error");
+                return;
+            }
+
+            selectedTickets.forEach(num => {
+                ticketsState[num] = {
+                    status: "reserved",
+                    buyerName: name,
+                    buyerPhone: phone
+                };
+            });
+
+            const calculatedTotal = calculateTotalPrice(raffleSettings.price, selectedTickets.length);
+            const selectedStr = selectedTickets.join(', ');
+
+            await saveTicketsState();
+            
+            closePaymentModal();
+            closeCheckoutModal();
+            showToast(`¡Tus ${selectedTickets.length} boletos han sido Reservados!`, "success");
+
+            const adminPhoneClean = raffleSettings.adminPhone.replace(/\D/g, '');
+            const message = encodeURIComponent(`Hola, realicé la transferencia para los números *${selectedStr}* para el *${raffleSettings.title}* a nombre de *${name}* (${phone}). Aquí te adjunto el comprobante por el valor total de *${calculatedTotal}*. ¡Muchas gracias!`);
+            const waUrl = `https://wa.me/${adminPhoneClean}?text=${message}`;
+            
+            selectedTickets = [];
+            updateSelectionBar();
+            renderTicketsGrid();
+
+            window.open(waUrl, '_blank');
+        };
+
+        window.viewTicketDetail = function(number) {
+            const info = ticketsState[number];
+            if (!info) return;
+
+            document.getElementById('detailTicketNum').textContent = number;
+            document.getElementById('detailBuyerName').textContent = info.buyerName || "No registrado";
+            document.getElementById('detailBuyerPhone').textContent = info.buyerPhone || "No registrado";
+
+            const badge = document.getElementById('detailTicketStatusBadge');
+            badge.textContent = info.status === 'reserved' ? 'RESERVADO' : 'PAGADO';
+            
+            if (info.status === 'reserved') {
+                badge.className = "text-xs font-bold px-3 py-1 rounded-full bg-purple-950 text-purple-300 border border-purple-500/30";
+            } else {
+                badge.className = "text-xs font-bold px-3 py-1 rounded-full bg-white text-slate-900 border border-white";
+            }
+
+            document.getElementById('ticketDetailModal').classList.remove('hidden');
+        };
+
+        window.closeTicketDetailModal = function() {
+            document.getElementById('ticketDetailModal').classList.add('hidden');
+        };
+
+        async function saveTicketsState() {
+            localStorage.setItem('ticketsState', JSON.stringify(ticketsState));
+            
+            if (isFirebaseSimulated) {
+                renderTicketsGrid();
+                updateAdminTicketsTable();
+                return;
+            }
+            try {
+                if (firebaseServices.setDoc) {
+                    await firebaseServices.setDoc(firebaseServices.ticketsDocRef, ticketsState);
+                }
+            } catch (err) {
+                console.error("Error saving tickets remotely:", err);
+                showToast("Error de guardado remoto. Se guardó localmente.", "warning");
+            }
+        }
+
+        async function saveSettingsState() {
+            localStorage.setItem('raffleSettings', JSON.stringify(raffleSettings));
+            updateRaffleUI();
+
+            if (isFirebaseSimulated) {
+                return;
+            }
+            try {
+                if (firebaseServices.setDoc) {
+                    await firebaseServices.setDoc(firebaseServices.settingsDocRef, raffleSettings);
+                }
+            } catch (err) {
+                console.error("Error saving settings remotely:", err);
+            }
+        }
+
+        window.copyShareLink = function() {
+            const shareUrl = window.location.href;
+            copyTextToClipboard(shareUrl);
+            showToast("¡Enlace del sorteo copiado para compartir! 🚀", "success");
+        };
+
+        function copyTextToClipboard(text) {
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+        }
+
+        window.openAdminAuthModal = function() {
+            document.getElementById('adminPinInput').value = "";
+            document.getElementById('adminAuthError').classList.add('hidden');
+            document.getElementById('adminAuthModal').classList.remove('hidden');
+        };
+
+        window.closeAdminAuthModal = function() {
+            document.getElementById('adminAuthModal').classList.add('hidden');
+        };
+
+        window.verifyAdminPin = function() {
+            const entered = document.getElementById('adminPinInput').value;
+            if (entered === raffleSettings.adminPin) {
+                document.getElementById('adminAuthModal').classList.add('hidden');
+                openAdminPanel();
+            } else {
+                document.getElementById('adminAuthError').classList.remove('hidden');
+            }
+        };
+
+        function openAdminPanel() {
+            document.getElementById('adminRaffleTitle').value = raffleSettings.title;
+            document.getElementById('adminRaffleDate').value = raffleSettings.date;
+            document.getElementById('adminRafflePrize').value = raffleSettings.prize;
+            document.getElementById('adminRafflePrice').value = raffleSettings.price;
+            document.getElementById('adminWalletAlias').value = raffleSettings.alias;
+            document.getElementById('adminWalletCVU').value = raffleSettings.cvu;
+            document.getElementById('adminPhone').value = raffleSettings.adminPhone;
+            document.getElementById('adminNewPin').value = "";
+
+            updateAdminTicketsTable();
+            switchAdminTab('settings');
+            document.getElementById('adminPanelModal').classList.remove('hidden');
+        }
+
+        window.closeAdminPanel = function() {
+            document.getElementById('adminPanelModal').classList.add('hidden');
+        };
+
+        window.switchAdminTab = function(tabName) {
+            const btnSet = document.getElementById('tabSettingsBtn');
+            const btnTick = document.getElementById('tabTicketsBtn');
+            const tabSet = document.getElementById('adminTabSettings');
+            const tabTick = document.getElementById('adminTabTickets');
+
+            if (tabName === 'settings') {
+                btnSet.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-yellow-500 text-slate-950";
+                btnTick.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-purple-950 text-purple-200 border border-purple-500/20";
+                tabSet.classList.remove('hidden');
+                tabTick.classList.add('hidden');
+            } else {
+                btnTick.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-yellow-500 text-slate-950";
+                btnSet.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-purple-950 text-purple-200 border border-purple-500/20";
+                tabTick.classList.remove('hidden');
+                tabSet.classList.add('hidden');
+            }
+        };
+
+        window.saveAdminSettings = async function() {
+            raffleSettings.title = document.getElementById('adminRaffleTitle').value.trim();
+            raffleSettings.date = document.getElementById('adminRaffleDate').value.trim();
+            raffleSettings.prize = document.getElementById('adminRafflePrize').value.trim();
+            raffleSettings.price = document.getElementById('adminRafflePrice').value.trim();
+            raffleSettings.alias = document.getElementById('adminWalletAlias').value.trim();
+            raffleSettings.cvu = document.getElementById('adminWalletCVU').value.trim();
+            raffleSettings.adminPhone = document.getElementById('adminPhone').value.trim();
+
+            const newPin = document.getElementById('adminNewPin').value.trim();
+            if (newPin) {
+                raffleSettings.adminPin = newPin;
+            }
+
+            await saveSettingsState();
+            showToast("Ajustes guardados correctamente.", "success");
+            closeAdminPanel();
+        };
+
+        window.updateAdminTicketsTable = function() {
+            const list = document.getElementById('adminTicketsList');
+            list.innerHTML = "";
+
+            const queryText = document.getElementById('adminTicketSearch').value.toLowerCase();
+            const filterVal = document.getElementById('adminTicketFilter').value;
+
+            for (let i = 0; i < 100; i++) {
+                const numStr = String(i).padStart(2, '0');
+                const info = ticketsState[numStr] || { status: 'free', buyerName: '', buyerPhone: '' };
+
+                const matchesSearch = numStr.includes(queryText) || 
+                                      info.buyerName.toLowerCase().includes(queryText) || 
+                                      info.buyerPhone.includes(queryText);
+
+                const matchesStatus = filterVal === 'all' || info.status === filterVal;
+
+                if (!matchesSearch || !matchesStatus) continue;
+
+                const item = document.createElement('div');
+                item.className = "p-3 rounded-2xl bg-black/40 border border-purple-500/10 flex items-center justify-between text-xs";
+
+                let statusBadge = '';
+                if (info.status === 'free') {
+                    statusBadge = `<span class="px-2 py-0.5 rounded-full bg-green-950 text-green-300 border border-green-500/30 text-[10px]">Libre</span>`;
+                } else if (info.status === 'reserved') {
+                    statusBadge = `<span class="px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-500/30 text-[10px]">Reservado</span>`;
+                } else {
+                    statusBadge = `<span class="px-2 py-0.5 rounded-full bg-red-950 text-red-300 border border-red-500/30 text-[10px] font-bold">Pagado</span>`;
+                }
+
+                item.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base font-black text-yellow-300 font-mono">${numStr}</span>
+                            ${statusBadge}
+                        </div>
+                        ${info.buyerName ? `
+                            <p class="text-[10px] text-purple-200">
+                                <strong>Comprador:</strong> ${info.buyerName} <span class="text-gray-400 font-mono">(${info.buyerPhone})</span>
+                            </p>
+                        ` : ''}
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="setTicketStatusAdmin('${numStr}', 'free')" class="p-1.5 bg-green-950 text-green-400 hover:bg-green-900 border border-green-500/20 rounded-lg" title="Marcar como Libre">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                        <button onclick="setTicketStatusAdmin('${numStr}', 'reserved')" class="p-1.5 bg-purple-950 text-purple-300 hover:bg-purple-900 border border-purple-500/20 rounded-lg" title="Marcar como Reservado">
+                            <i class="fa-solid fa-lock"></i>
+                        </button>
+                        <button onclick="setTicketStatusAdmin('${numStr}', 'paid')" class="p-1.5 bg-white text-slate-900 hover:bg-gray-100 rounded-lg font-bold" title="Confirmar Pago">
+                            <i class="fa-solid fa-check"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(item);
+            }
+        };
+
+        window.filterAdminTickets = function() {
+            updateAdminTicketsTable();
+        };
+
+        window.setTicketStatusAdmin = async function(number, status) {
+            if (status === 'free') {
+                ticketsState[number] = {
+                    status: 'free',
+                    buyerName: '',
+                    buyerPhone: ''
+                };
+            } else {
+                const existing = ticketsState[number] || {};
+                let name = existing.buyerName || '';
+                let phone = existing.buyerPhone || '';
+                
+                if (!name) {
+                    name = prompt("Ingrese el Nombre del Comprador:", "Admin Sorteo");
+                    phone = prompt("Ingrese el Teléfono del Comprador:", "+549");
+                }
+
+                ticketsState[number] = {
+                    status: status,
+                    buyerName: name || "Admin Sorteo",
+                    buyerPhone: phone || ""
+                };
+            }
+
+            await saveTicketsState();
+            showToast(`Boleto ${number} actualizado a ${status}`, "success");
+        };
+
+        window.resetAllTickets = async function() {
+            if (!confirm("¿Está seguro de que desea liberar los 100 boletos de la rifa? Esta acción es irreversible.")) return;
+
+            for (let i = 0; i < 100; i++) {
+                const numStr = String(i).padStart(2, '0');
+                ticketsState[numStr] = {
+                    status: "free",
+                    buyerName: "",
+                    buyerPhone: ""
+                };
+            }
+
+            await saveTicketsState();
+            showToast("¡Se reiniciaron todos los boletos!", "success");
+        };
+
+        let isDrawing = false;
+        window.triggerDrawAnimation = function() {
+            closeAdminPanel();
+
+            const paidTickets = Object.keys(ticketsState).filter(num => ticketsState[num].status === 'paid');
+
+            if (paidTickets.length === 0) {
+                alert("Atención: Para poder realizar el Sorteo, debe haber al menos un (1) boleto en estado 'PAGADO'. Marca boletos como Pagados desde el Panel de Administración.");
+                return;
+            }
+
+            if (isDrawing) return;
+            isDrawing = true;
+
+            document.getElementById('victoryContainer').classList.add('hidden');
+            document.getElementById('rouletteContainer').classList.remove('hidden');
+            document.getElementById('sorteoAnimationModal').classList.remove('hidden');
+
+            const rollText = document.getElementById('rouletteNumber');
+            let rollInterval;
+            let speed = 40;
+            let duration = 3000;
+
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            function playTickSound() {
+                try {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.1);
+                } catch (e) {}
+            }
+
+            const startRoll = Date.now();
+            rollInterval = setInterval(() => {
+                const randomNum = String(Math.floor(Math.random() * 100)).padStart(2, '0');
+                rollText.textContent = randomNum;
+                playTickSound();
+            }, speed);
+
+            setTimeout(() => {
+                clearInterval(rollInterval);
+                
+                const winnerIndex = Math.floor(Math.random() * paidTickets.length);
+                const winnerNumber = paidTickets[winnerIndex];
+                const winnerData = ticketsState[winnerNumber];
+
+                rollText.textContent = winnerNumber;
+
+                try {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        setTimeout(() => {
+                            const osc = audioCtx.createOscillator();
+                            const gain = audioCtx.createGain();
+                            osc.frequency.value = freq;
+                            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+                            osc.connect(gain);
+                            gain.connect(audioCtx.destination);
+                            osc.start();
+                            osc.stop(audioCtx.currentTime + 0.5);
+                        }, idx * 120);
+                    });
+                } catch (e) {}
+
+                confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+
+                setTimeout(() => {
+                    document.getElementById('rouletteContainer').classList.add('hidden');
+                    
+                    document.getElementById('victoryNumber').textContent = winnerNumber;
+                    document.getElementById('victoryName').textContent = winnerData.buyerName;
+                    document.getElementById('victoryPhone').textContent = winnerData.buyerPhone || "Sin teléfono";
+                    
+                    const whatsAppBtn = document.getElementById('victoryWhatsappBtn');
+                    const message = encodeURIComponent(`¡Felicidades! Tu número de boleto ${winnerNumber} ha resultado GANADOR del premio de ${raffleSettings.prize} en nuestro ${raffleSettings.title}. ¡Ponte en contacto con nosotros para coordinar tu premio!`);
+                    whatsAppBtn.onclick = () => {
+                        window.open(`https://wa.me/${winnerData.buyerPhone.replace(/\D/g, '')}?text=${message}`, '_blank');
+                    };
+
+                    document.getElementById('victoryContainer').classList.remove('hidden');
+                    isDrawing = false;
+                }, 800);
+
+            }, duration);
+        };
+
+        window.closeWinnerCelebration = function() {
+            document.getElementById('sorteoAnimationModal').classList.add('hidden');
+        };
+
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let bgClass = "bg-green-600/90 text-white";
+            let icon = '<i class="fa-solid fa-circle-check"></i>';
+            if (type === 'error') {
+                bgClass = "bg-red-600/90 text-white";
+                icon = '<i class="fa-solid fa-circle-exclamation"></i>';
+            } else if (type === 'warning') {
+                bgClass = "bg-yellow-500/90 text-slate-900";
+                icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+
+            toast.className = `p-3.5 rounded-2xl ${bgClass} shadow-xl flex items-center gap-2.5 text-xs font-bold transition-all duration-300 opacity-0 transform translate-y-2 pointer-events-auto`;
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => {
+                    container.removeChild(toast);
+                }, 300);
+            }, 4000);
+        }
+
+        function loadInitialUI() {
+            updateRaffleUI();
+            renderTicketsGrid();
+
+            const nameInput = document.getElementById('custName');
+            const phoneInput = document.getElementById('custPhone');
+            const pinInput = document.getElementById('adminPinInput');
+
+            if (nameInput) {
+                nameInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
+                    }
+                });
+            }
+
+            if (phoneInput) {
+                phoneInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
+                    }
+                });
+            }
+
+            if (pinInput) {
+                pinInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        verifyAdminPin();
+                    }
+                });
+            }
+        }
+
+        authenticateUser();
+    </script>
+</body>
+</html>
