@@ -1,4 +1,4 @@
-// CONFIGURACIÓN DE FIREBASE (¡Acá van tus claves, Marcelo!)
+// CONFIGURACIÓN DE FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyA2x776vVeCCrlZO-FUqNYoW7YKeQBNwc0",
   authDomain: "rifa-sorteo-premium.firebaseapp.com",
@@ -18,7 +18,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const contenedor = document.getElementById("contenedor-numeros");
     
     for (let i = 0; i < 100; i++) {
-        // Formatear a dos dígitos (00, 01, 02...)
         const numeroFormateado = i.toString().padStart(2, '0');
         
         const celda = document.createElement("div");
@@ -26,17 +25,15 @@ document.addEventListener("DOMContentLoaded", () => {
         celda.id = `num-${numeroFormateado}`;
         celda.innerText = numeroFormateado;
         
-        // Escuchar el clic en cada número
         celda.addEventListener("click", () => abrirModal(numeroFormateado));
-        
         contenedor.appendChild(celda);
     }
     
-    // Escuchar los cambios en la base de datos en tiempo real
+    // ESCUCHAR EN TIEMPO REAL (Para todos los celulares)
     database.ref("numeros").on("value", (snapshot) => {
         const datos = snapshot.val() || {};
         
-        // Limpiar todos a disponible primero
+        // 1. Primero limpiamos TODOS los números y los ponemos disponibles
         for (let i = 0; i < 100; i++) {
             const numStr = i.toString().padStart(2, '0');
             const celda = document.getElementById(`num-${numStr}`);
@@ -45,9 +42,11 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         
-        // Marcar los que ya están reservados
+        // 2. Marcamos como reservados los que están en Firebase (Corregido el error del 00 al 09)
         Object.keys(datos).forEach(num => {
-            const celda = document.getElementById(`num-${num}`);
+            // Forzamos a que el número tenga siempre 2 dígitos (ej: "5" pasa a "05")
+            const numAjustado = num.toString().padStart(2, '0'); 
+            const celda = document.getElementById(`num-${numAjustado}`);
             if (celda) {
                 celda.className = "numero-celda reservado";
             }
@@ -55,13 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// Lógica del Modal (Ventana flotante)
+// Lógica del Modal
 const modal = document.getElementById("modal-reserva");
 const numSeleccionadoTxt = document.getElementById("numero-seleccionado");
 let numeroActual = null;
 
 function abrirModal(numero) {
-    // Si ya está reservado, no hacer nada (se maneja visualmente)
     const celda = document.getElementById(`num-${numero}`);
     if (celda.classList.contains("reservado")) {
         alert("Este número ya está reservado.");
