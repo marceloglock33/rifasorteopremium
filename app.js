@@ -2,7 +2,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyA2x776vVeCCrlZO-FUqNYoW7YKeQBNwc0",
   authDomain: "rifa-sorteo-premium.firebaseapp.com",
-  databaseURL: "https://rifa-sorteo-premium-default-rtdb.us-central1.firebasestorage.app",,
+  databaseURL: "https://rifa-sorteo-premium-default-rtdb.us-central1.firebaseio.com",,,
   projectId: "rifa-sorteo-premium",
   storageBucket: "rifa-sorteo-premium.firebasestorage.app",
   messagingSenderId: "650229645589",
