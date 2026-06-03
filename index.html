@@ -489,6 +489,16 @@
         </div>
     </div>
 
-    <script src="app.js?v=2"></script>
+    <!-- Librerías de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- Tu archivo principal -->
+    <script src="app.js"></script>
+       <script>
+        // Esto fuerza a que el navegador siempre busque la versión más nueva de tu app.js
+        const script = document.querySelector('script[src="app.js"]');
+        script.src = 'app.js?t=' + new Date().getTime();
+    </script>
 </body>
 </html>
