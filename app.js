@@ -1,4 +1,23 @@
-// CONFIGURACIÓN DE FIREBASE
+// CONFIGURACIÓN DE FIREBASE, // --- AQUÍ EMPIEZA LA CAJA PROTECTORA ---
+document.addEventListener('DOMContentLoaded', () => {
+
+    // 1. Aquí va tu configuración de Firebase (lo que ya tenías)
+    const firebaseConfig = { ... };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // 2. Aquí va todo el resto de tu código
+    // ... (tus funciones, tus variables, etc.)
+
+    // 3. Tu botón (con el seguro que pusimos)
+    const btnCerrar = document.getElementById("btn-cerrar");
+    if (btnCerrar) {
+        btnCerrar.addEventListener("click", () => {
+            // código de cerrar
+        });
+    }
+
+}); 
 const firebaseConfig = {
   apiKey: "AIzaSyA2x776vVeCCrlZO-FUqNYoW7YKeQBNwc0",
   authDomain: "rifa-sorteo-premium.firebaseapp.com",
